@@ -1,52 +1,8 @@
 "use server";
+import fs from "fs/promises";
+import path from "path";
 
-
-let tasksData: DataStructure = {
-  tasks: [
-    {
-      id: 1742893758713,
-      isCompleted: false,
-      subTasks: [
-        {
-          id: 1742893743596,
-          name: "Sub task 1",
-          description: "desc",
-          assignees: ["a", "b", "c"],
-          startDate: "2025-03-25T09:09:03.596Z",
-          dueDate: "2025-03-25T09:09:03.596Z",
-          priority: "medium",
-          isCompleted: false,
-        },
-      ],
-      name: "Task 1 ",
-      description: "Task 1 desc",
-      priority: "medium",
-      startDate: "2025-03-25T09:08:45.648Z",
-      dueDate: "2025-03-25T09:08:45.648Z",
-    },
-    {
-      id: 1742893783474,
-      isCompleted: true,
-      subTasks: [
-        {
-          id: 1742893769946,
-          name: "subtask 1",
-          description: "desc",
-          assignees: ["d", "f", "e"],
-          startDate: "2025-03-25T09:09:29.946Z",
-          dueDate: "2025-03-25T09:09:29.946Z",
-          priority: "low",
-          isCompleted: true,
-        },
-      ],
-      name: "Task 2",
-      description: "task 2 desc",
-      priority: "medium",
-      startDate: "2025-03-25T09:09:22.131Z",
-      dueDate: "2025-03-25T09:09:22.131Z",
-    },
-  ],
-};
+const filePath = path.join(process.cwd(), "data.json");
 
 type SubTask = {
   id: number;
@@ -81,15 +37,25 @@ type GetTasksQueries =
   | undefined;
 
 export async function readData(): Promise<DataStructure> {
-  return new Promise((resolve) => {
-    resolve(tasksData);
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await fs.readFile(filePath, "utf-8");
+      const parsedData: DataStructure = JSON.parse(data);
+      resolve(parsedData);
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
 export async function writeData(data: DataStructure): Promise<void> {
-  return new Promise((resolve) => {
-    tasksData = data;
-    resolve();
+  return new Promise(async (resolve, reject) => {
+    try {
+      await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
@@ -174,7 +140,7 @@ export async function updateTask(task: Task): Promise<Task> {
 export async function updateSubTaskStatus(
   taskId: number,
   subtaskId: number,
-  isCompleted: boolean
+  isCompleted: boolean,
 ): Promise<Task | null> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -216,7 +182,7 @@ export async function deleteTaskById(id: number): Promise<number> {
 
 export async function deleteSubTaskById(
   taskId: number,
-  subtaskId: number
+  subtaskId: number,
 ): Promise<number> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -227,7 +193,7 @@ export async function deleteSubTaskById(
           newTaskArray.push({
             ...task,
             subTasks: task.subTasks.filter(
-              (subTask) => subTask.id !== subtaskId
+              (subTask) => subTask.id !== subtaskId,
             ),
           });
         } else {
@@ -245,7 +211,7 @@ export async function deleteSubTaskById(
 
 export async function updateTaskCompletion(
   id: number,
-  isCompleted: boolean
+  isCompleted: boolean,
 ): Promise<number> {
   return new Promise(async (resolve, reject) => {
     try {
