@@ -2,12 +2,18 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Controller } from "react-hook-form";
 import { X } from "lucide-react";
 import { useTasks } from "@/hooks/useTasks";
 import { Task } from "@/app/api/api";
+import FormDatePicker from "@/components/form/FormDatePicker";
+import SelectWithLabel from "@/components/form/SelectWithLabel";
+
+const priorityOptions = [
+  { label: "Low", value: "low" },
+  { label: "Medium", value: "medium" },
+  { label: "High", value: "high" },
+];
 
 export const taskSchema = z.object({
   name: z.string().min(3, "Task name must be at least 3 characters"),
@@ -33,7 +39,7 @@ export const taskSchema = z.object({
       }),
       priority: z.enum(["low", "medium", "high"]),
       isCompleted: z.boolean().default(false),
-    })
+    }),
   ),
 });
 
@@ -80,13 +86,47 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
     name: "subTasks",
   });
 
+  const handleFormSubmit = (data: TaskFormData) => {
+    const processedData = {
+      ...data,
+      startDate: data.startDate.toISOString(),
+      dueDate: data.dueDate.toISOString(),
+      subTasks: data.subTasks.map((subTask) => ({
+        ...subTask,
+        startDate: subTask.startDate.toISOString(),
+        dueDate: subTask.dueDate.toISOString(),
+        assignees: subTask.assignees
+          .split(",")
+          .map((assignee) => assignee.trim())
+          .filter((assignee) => assignee !== ""),
+      })),
+    };
+
+    if (initialData) {
+      updateTaskDetails(
+        {
+          ...processedData,
+          id: initialData.id,
+          isCompleted: initialData.isCompleted,
+        },
+        {
+          onSuccess: () => onClose(),
+        },
+      );
+    } else {
+      createNewTask(processedData, {
+        onSuccess: () => onClose(),
+      });
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div
         className="bg-white rounded-xl w-full max-w-3xl m-4 flex flex-col"
         style={{ maxHeight: "90vh" }}
       >
-        <div className="sticky top-0 z-10 bg-white border-b border-[#f2f2f2] px-6 py-4 flex items-center justify-between rounded-t-xl">
+        <div className="sticky top-0 z-10 bg-white border-b border-border-default px-6 py-4 flex items-center justify-between rounded-t-xl">
           <h2 className="text-xl font-semibold">
             {initialData ? "Edit Task" : "Add New Task"}
           </h2>
@@ -100,39 +140,7 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
 
         <div className="flex-1 overflow-y-auto">
           <form
-            onSubmit={handleSubmit((data) => {
-              const processedData = {
-                ...data,
-                startDate: data.startDate.toISOString(),
-                dueDate: data.dueDate.toISOString(),
-                subTasks: data.subTasks.map((subTask) => ({
-                  ...subTask,
-                  startDate: subTask.startDate.toISOString(),
-                  dueDate: subTask.dueDate.toISOString(),
-                  assignees: subTask.assignees
-                    .split(",")
-                    .map((assignee) => assignee.trim())
-                    .filter((assignee) => assignee !== ""),
-                })),
-              };
-
-              if (initialData) {
-                updateTaskDetails(
-                  {
-                    ...processedData,
-                    id: initialData.id,
-                    isCompleted: initialData.isCompleted,
-                  },
-                  {
-                    onSuccess: () => onClose(),
-                  }
-                );
-              } else {
-                createNewTask(processedData, {
-                  onSuccess: () => onClose(),
-                });
-              }
-            })}
+            onSubmit={handleSubmit(handleFormSubmit)}
             autoComplete="off"
             className="p-6 space-y-6"
           >
@@ -144,7 +152,7 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                 <input
                   {...register("name")}
                   autoComplete="off"
-                  className="w-full p-2 border border-[#e2e2e2] rounded-lg bg-[#fafafa] focus:outline-none focus:ring-1 focus:ring-[#2e6be9]"
+                  className="w-full p-2 border border-border-input rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 {errors.name && (
                   <p className="text-red-500 text-sm mt-1">
@@ -153,71 +161,24 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Priority
-                </label>
-                <select
-                  {...register("priority")}
-                  className="w-full p-2 border border-[#e2e2e2] rounded-lg bg-[#fafafa] focus:outline-none focus:ring-1 focus:ring-[#2e6be9]"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
+              <SelectWithLabel
+                label="Priority"
+                options={priorityOptions}
+                register={register("priority")}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Start Date
-                </label>
-                <Controller
-                  control={control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <DatePicker
-                      selected={field.value}
-                      onChange={(date) => field.onChange(date)}
-                      autoComplete="off"
-                      className="w-full p-2 border border-[#e2e2e2] rounded-lg bg-[#fafafa] focus:outline-none focus:ring-1 focus:ring-[#2e6be9]"
-                      dateFormat="dd/MM/yyyy"
-                      placeholderText="DD/MM/YYYY"
-                    />
-                  )}
-                />
-                {errors.startDate && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.startDate.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Due Date
-                </label>
-                <Controller
-                  control={control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <DatePicker
-                      selected={field.value}
-                      onChange={(date) => field.onChange(date)}
-                      autoComplete="off"
-                      className="w-full p-2 border border-[#e2e2e2] rounded-lg bg-[#fafafa] focus:outline-none focus:ring-1 focus:ring-[#2e6be9]"
-                      dateFormat="dd/MM/yyyy"
-                      placeholderText="DD/MM/YYYY"
-                      minDate={new Date()}
-                    />
-                  )}
-                />
-                {errors.dueDate && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.dueDate.message}
-                  </p>
-                )}
-              </div>
+              <FormDatePicker
+                control={control}
+                name="startDate"
+                label="Start Date"
+              />
+              <FormDatePicker
+                control={control}
+                name="dueDate"
+                label="due Date"
+              />
             </div>
 
             <div>
@@ -227,18 +188,18 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
               <textarea
                 {...register("description")}
                 autoComplete="off"
-                className="w-full p-2 border border-[#e2e2e2] rounded-lg bg-[#fafafa] focus:outline-none focus:ring-1 focus:ring-[#2e6be9]"
+                className="w-full p-2 border border-border-input rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                 rows={3}
               />
             </div>
 
-            <div className="border border-[#e2e2e2] rounded-lg p-4">
+            <div className="border border-border-input rounded-lg p-4">
               <h3 className="font-medium mb-4">Subtasks</h3>
               <div className="space-y-4">
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="p-4 border border-[#e2e2e2] rounded-lg bg-[#fafafa]"
+                    className="p-4 border border-border-input rounded-lg bg-background"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-4">
@@ -249,7 +210,7 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                           <input
                             {...register(`subTasks.${index}.name`)}
                             autoComplete="off"
-                            className="w-full p-2 border border-[#e2e2e2] rounded-lg"
+                            className="w-full p-2 border border-border-input rounded-lg"
                           />
                           {errors.subTasks?.[index]?.name && (
                             <p className="text-red-500 text-sm mt-1">
@@ -264,7 +225,7 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                           <input
                             {...register(`subTasks.${index}.description`)}
                             autoComplete="off"
-                            className="w-full p-2 border border-[#e2e2e2] rounded-lg"
+                            className="w-full p-2 border border-border-input rounded-lg"
                           />
                           {errors.subTasks?.[index]?.description && (
                             <p className="text-red-500 text-sm mt-1">
@@ -283,7 +244,7 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                             {...register(`subTasks.${index}.assignees`)}
                             autoComplete="off"
                             placeholder="e.g., John, Jane, Bob"
-                            className="w-full p-2 border border-[#e2e2e2] rounded-lg"
+                            className="w-full p-2 border border-border-input rounded-lg"
                           />
                           {errors.subTasks?.[index]?.assignees && (
                             <p className="text-red-500 text-sm mt-1">
@@ -293,60 +254,23 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-1">
-                              Start Date
-                            </label>
-                            <Controller
-                              control={control}
-                              name={`subTasks.${index}.startDate`}
-                              render={({ field }) => (
-                                <DatePicker
-                                  selected={field.value}
-                                  onChange={(date) => field.onChange(date)}
-                                  autoComplete="off"
-                                  className="w-full p-2 border border-[#e2e2e2] rounded-lg"
-                                  dateFormat="dd/MM/yyyy"
-                                  placeholderText="DD/MM/YYYY"
-                                />
-                              )}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1">
-                              Due Date
-                            </label>
-                            <Controller
-                              control={control}
-                              name={`subTasks.${index}.dueDate`}
-                              render={({ field }) => (
-                                <DatePicker
-                                  selected={field.value}
-                                  onChange={(date) => field.onChange(date)}
-                                  autoComplete="off"
-                                  className="w-full p-2 border border-[#e2e2e2] rounded-lg"
-                                  dateFormat="dd/MM/yyyy"
-                                  placeholderText="DD/MM/YYYY"
-                                  minDate={new Date()}
-                                />
-                              )}
-                            />
-                          </div>
+                          <FormDatePicker
+                            control={control}
+                            name={`subTasks.${index}.startDate`}
+                            label="Start Date"
+                          />
+                          <FormDatePicker
+                            control={control}
+                            name={`subTasks.${index}.dueDate`}
+                            label="Due Date"
+                          />
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Priority
-                          </label>
-                          <select
-                            {...register(`subTasks.${index}.priority`)}
-                            className="w-full p-2 border border-[#e2e2e2] rounded-lg"
-                          >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                          </select>
-                        </div>
+                        <SelectWithLabel
+                          label="Priority"
+                          options={priorityOptions}
+                          register={register(`subTasks.${index}.priority`)}
+                        />
                       </div>
                     </div>
 
@@ -374,7 +298,7 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
                       isCompleted: false,
                     })
                   }
-                  className="px-3 py-1.5 bg-[#2e6be9] text-white rounded-md text-sm"
+                  className="px-3 py-1.5 bg-primary text-white rounded-md text-sm"
                 >
                   Add Subtask
                 </button>
@@ -385,13 +309,13 @@ export default function TaskForm({ onClose, initialData }: TaskFormProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-[#e2e2e2] rounded-md text-sm"
+                className="px-4 py-2 border border-border-input rounded-md text-sm"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#2e6be9] text-white rounded-md text-sm disabled:opacity-50"
+                className="px-4 py-2 bg-primary text-white rounded-md text-sm disabled:opacity-50"
                 disabled={isCreating || isUpdating}
               >
                 {isCreating || isUpdating

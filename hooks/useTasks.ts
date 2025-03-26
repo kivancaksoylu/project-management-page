@@ -35,8 +35,16 @@ export function useTasks(queryParams?: { search: string }) {
   } = useQuery({
     queryKey: ["tasks", queryParams],
     queryFn: () => getTasks(queryParams),
-    staleTime: Infinity,
-    placeholderData: (prev) => prev,
+    placeholderData: (prev) => {
+      if (prev) {
+        return prev;
+      } else {
+        return queryClient.getQueryData([
+          "tasks",
+          { search: "", isServerFetch: true },
+        ]);
+      }
+    },
   });
 
   const { mutate: deleteTask } = useMutation({

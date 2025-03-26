@@ -1,6 +1,5 @@
 "use server";
 
-
 let tasksData: DataStructure = {
   tasks: [
     {
@@ -48,7 +47,7 @@ let tasksData: DataStructure = {
   ],
 };
 
-type SubTask = {
+export type SubTask = {
   id: number;
   name: string;
   description: string;
@@ -68,6 +67,14 @@ export type Task = {
   dueDate: string;
   priority: "low" | "medium" | "high";
   subTasks: SubTask[];
+};
+
+export type WeatherData = {
+  condition: string;
+  temperature: string;
+  humidity: string;
+  windSpeed: string;
+  location: string;
 };
 
 type DataStructure = {
@@ -121,7 +128,7 @@ export async function getTasks(queries: GetTasksQueries): Promise<Task[]> {
             return task;
         });
       }
-      setTimeout(() => resolve(filteredData), 500);
+      setTimeout(() => resolve(filteredData), 30);
     } catch (error) {
       reject(error);
     }
@@ -148,7 +155,7 @@ export async function createTask(task: {
       data.tasks.push(newTask);
       await writeData(data);
 
-      setTimeout(() => resolve(newTask), 500);
+      setTimeout(() => resolve(newTask), 50);
     } catch (error) {
       reject(error);
     }
@@ -164,7 +171,7 @@ export async function updateTask(task: Task): Promise<Task> {
       data.tasks[index] = task;
       await writeData(data);
 
-      setTimeout(() => resolve(task), 500);
+      setTimeout(() => resolve(task), 50);
     } catch (error) {
       reject(error);
     }
@@ -174,7 +181,7 @@ export async function updateTask(task: Task): Promise<Task> {
 export async function updateSubTaskStatus(
   taskId: number,
   subtaskId: number,
-  isCompleted: boolean
+  isCompleted: boolean,
 ): Promise<Task | null> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -193,7 +200,7 @@ export async function updateSubTaskStatus(
       subTask.isCompleted = isCompleted;
       await writeData(data);
 
-      setTimeout(() => resolve(task), 500);
+      setTimeout(() => resolve(task), 50);
     } catch (error) {
       reject(error);
     }
@@ -207,7 +214,7 @@ export async function deleteTaskById(id: number): Promise<number> {
       data.tasks = data.tasks.filter((p: Task) => p.id !== id);
 
       await writeData(data);
-      setTimeout(() => resolve(id), 500);
+      setTimeout(() => resolve(id), 50);
     } catch (error) {
       reject(error);
     }
@@ -216,7 +223,7 @@ export async function deleteTaskById(id: number): Promise<number> {
 
 export async function deleteSubTaskById(
   taskId: number,
-  subtaskId: number
+  subtaskId: number,
 ): Promise<number> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -227,7 +234,7 @@ export async function deleteSubTaskById(
           newTaskArray.push({
             ...task,
             subTasks: task.subTasks.filter(
-              (subTask) => subTask.id !== subtaskId
+              (subTask) => subTask.id !== subtaskId,
             ),
           });
         } else {
@@ -236,7 +243,7 @@ export async function deleteSubTaskById(
       });
 
       await writeData({ tasks: newTaskArray });
-      setTimeout(() => resolve(subtaskId), 500);
+      setTimeout(() => resolve(subtaskId), 50);
     } catch (error) {
       reject(error);
     }
@@ -245,7 +252,7 @@ export async function deleteSubTaskById(
 
 export async function updateTaskCompletion(
   id: number,
-  isCompleted: boolean
+  isCompleted: boolean,
 ): Promise<number> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -268,9 +275,30 @@ export async function updateTaskCompletion(
       });
 
       await writeData({ tasks: newTaskArray });
-      setTimeout(() => resolve(id), 500);
+      setTimeout(() => resolve(id), 50);
     } catch (error) {
       reject(error);
     }
   });
+}
+
+export async function getWeatherByIp(ip: string): Promise<WeatherData> {
+  console.log("ip", ip);
+  const response = await fetch(`https://wttr.in/${ip}?format=%C|%t|%h|%w|%l&m`, {
+    headers: {
+      "User-Agent": "curl/7.64.1",
+    },
+  });
+
+  const data = await response.text();
+  const [condition, temperature, humidity, windSpeed, location] =
+    data.split("|");
+
+  return {
+    condition: condition.trim(),
+    temperature: temperature.trim(),
+    humidity: humidity.trim(),
+    windSpeed: windSpeed.trim(),
+    location: location.trim(),
+  };
 }

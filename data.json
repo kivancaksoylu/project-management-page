@@ -8,11 +8,7 @@
           "id": 1742893743596,
           "name": "Sub task 1",
           "description": "desc",
-          "assignees": [
-            "a",
-            "b",
-            "c"
-          ],
+          "assignees": ["a", "b", "c"],
           "startDate": "2025-03-25T09:09:03.596Z",
           "dueDate": "2025-03-25T09:09:03.596Z",
           "priority": "medium",
@@ -33,11 +29,7 @@
           "id": 1742893769946,
           "name": "subtask 1",
           "description": "desc",
-          "assignees": [
-            "d",
-            "f",
-            "e"
-          ],
+          "assignees": ["d", "f", "e"],
           "startDate": "2025-03-25T09:09:29.946Z",
           "dueDate": "2025-03-25T09:09:29.946Z",
           "priority": "low",

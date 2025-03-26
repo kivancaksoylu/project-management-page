@@ -22,13 +22,13 @@ const NavbarButton = ({ isExpanded, name, icon, route }: NavbarButtonProps) => {
       <TooltipTrigger asChild>
         <Link href={route}>
           <button
-            className={`flex items-center rounded-md hover:bg-[#ffffff] hover:border border border-transparent hover:border-[#ebebeb] active:bg-[#ffffff] transition-all duration-300 w-full ${
+            className={`flex items-center rounded-md hover:bg-muted hover:border border border-transparent hover:border-muted-hover active:bg-muted transition-all duration-300 w-full ${
               isExpanded
                 ? "px-2 py-1.5 justify-start gap-3"
                 : "h-9 w-9 justify-center"
             } md:px-2 md:py-1.5 md:justify-start md:gap-3 ${
               isActive
-                ? "bg-[#ffffff] border border-[#ebebeb]"
+                ? "bg-muted border border-muted-hover"
                 : "border border-transparent"
             }`}
           >
